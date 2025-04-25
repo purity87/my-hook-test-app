@@ -1,23 +1,108 @@
 // components/LadderBoard.js
 'use client';
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useSse } from '@/context/SseContext';
+
+
+// 사다리 경로 계산 함수
+const calculatePath = (startLane, bridges) => {
+    let currentLane = startLane;
+    const positions = [{ lane: currentLane, step: 0 }];
+
+    bridges.forEach(({ lanePair, hasBridge }, step) => {
+        if (hasBridge) {
+            if (lanePair === currentLane) {
+                currentLane += 1; // 오른쪽 레인으로 이동
+            } else if (lanePair + 1 === currentLane) {
+                currentLane -= 1; // 왼쪽 레인으로 이동
+            }
+        }
+        if (currentLane >= 0 && currentLane < 4) {
+            positions.push({ lane: currentLane, step: step + 1 });
+        }
+    });
+
+    return positions;
+};
+// 애니메이션 경로 계산 함수 (수직/수평 분리, 연결선 위치 반영)
+const calculateAnimationPath = (pathPositions, laneWidth, stepHeight) => {
+    const animationPath = [];
+    for (let i = 0; i < pathPositions.length - 1; i++) {
+        const current = pathPositions[i];
+        const next = pathPositions[i + 1];
+        const currentX = current.lane * laneWidth + laneWidth / 2;
+        const nextX = next.lane * laneWidth + laneWidth / 2;
+        const bridgeY = (current.step + 0.5) * stepHeight; // 연결선의 y좌표
+        const nextY = next.step * stepHeight + 20; // 다음 단계의 y좌표
+
+        // 수직 하강 (연결선 위치까지)
+        animationPath.push({ x: currentX, y: bridgeY });
+        // 수평 이동 (연결선 위치에서)
+        if (current.lane !== next.lane) {
+            animationPath.push({ x: nextX, y: bridgeY });
+        }
+        // 수직 하강 (다음 단계까지)
+        if (current.lane === next.lane || i === pathPositions.length - 2) {
+            animationPath.push({ x: nextX, y: nextY });
+        }
+    }
+    return animationPath;
+};
+
+// 랜덤 사다리 생성 함수
+const generateRandomBridges = () => {
+    return Array.from({ length: 5 }, () => ({
+        lanePair: Math.floor(Math.random() * 3), // 0: 0-1, 1: 1-2, 2: 2-3
+        hasBridge: Math.random() > 0.5, // 연결선 여부
+    }));
+};
 
 export default function LadderBoard() {
     const { messages } = useSse();
     const [currentPosition, setCurrentPosition] = useState(0);
+    const [selectedLane, setSelectedLane] = useState(0);
     const [currentPlayer, setCurrentPlayer] = useState(null);
-    const [path, setPath] = useState([]);
+    const [bridges, setBridges] = useState([]);
+    const [pathPositions, setPathPositions] = useState([]);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isGenerated, setIsGenerated] = useState(false);
 
+    // SSE 메시지 처리
     useEffect(() => {
         const latestMessage = messages[messages.length - 1];
-        if (latestMessage?.position) {
-            setCurrentPosition(latestMessage.position);
-        }
         if (latestMessage?.player) {
             setCurrentPlayer(latestMessage.player);
         }
     }, [messages]);
+
+    // 시작 레인 선택 시 플레이어 이동 및 경로 초기화
+    useEffect(() => {
+        console.log('>>currentPlayer ', currentPlayer)
+        if (!isPlaying) {
+            setCurrentPosition(selectedLane);
+            setPathPositions([]); // 경로 초기화
+        }
+    }, [selectedLane, isPlaying]);
+
+    // 사다리 랜덤 생성 핸들러
+    const handleGenerateLadder = () => {
+        const newBridges = generateRandomBridges();
+        setBridges(newBridges);
+        setPathPositions([]);
+        setCurrentPosition(selectedLane);
+        setIsGenerated(true);
+        setIsPlaying(false);
+    };
+
+    // 사다리타기 시작 핸들러
+    const handleStartLadder = () => {
+        if (!isGenerated) return;
+        setCurrentPosition(selectedLane);
+        const positions = calculatePath(selectedLane, bridges);
+        setPathPositions(positions);
+        setIsPlaying(true);
+    };
 
     // 사다리 설정
     const lanes = 4; // 4개의 수직선
@@ -27,20 +112,73 @@ export default function LadderBoard() {
     const svgWidth = lanes * laneWidth;
     const svgHeight = steps * stepHeight;
 
+    // 애니메이션 경로 좌표 계산
+    const getPlayerCoordinates = (stepIndex = pathPositions.length - 1) => {
+        if (pathPositions.length === 0 || stepIndex < 0) {
+            return { x: currentPosition * laneWidth + laneWidth / 2, y: 20 };
+        }
+        const pos = pathPositions[stepIndex];
+        return {
+            x: pos.lane * laneWidth + laneWidth / 2,
+            y: pos.step * stepHeight + 20,
+        };
+    };
+
+    // 애니메이션 경로 (수직/수평 분리)
+    const animationPath = pathPositions.length > 0
+        ? calculateAnimationPath(pathPositions, laneWidth, stepHeight)
+        : [];
+
+    // 애니메이션 타이밍 계산
+    const totalSteps = animationPath.length;
+    const times = Array.from({ length: totalSteps }, (_, i) => i / (totalSteps - 1));
+
     return (
-        <div className="p-4">
-            <h2 className="text-xl font-semibold mb-4">사다리 게임 보드</h2>
+        <div className="p-4 bg-gray-50 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">진짜 사다리타기</h2>
+            <div className="flex items-center space-x-4 mb-4">
+                <div>
+                    <label className="text-gray-600 mr-2">시작 레인:</label>
+                    <select
+                        value={selectedLane}
+                        onChange={(e) => setSelectedLane(Number(e.target.value))}
+                        className="px-2 py-1 border rounded-lg text-gray-700"
+                        disabled={isPlaying}
+                    >
+                        {[0, 1, 2, 3].map((lane) => (
+                            <option key={lane} value={lane}>
+                                레인 {lane + 1}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+                <button
+                    onClick={handleGenerateLadder}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 disabled:opacity-50"
+                    disabled={isPlaying}
+                >
+                    사다리 랜덤 생성
+                </button>
+                <button
+                    onClick={handleStartLadder}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50"
+                    disabled={!isGenerated || isPlaying}
+                >
+                    {isPlaying ? '진행 중...' : '사다리타기 시작'}
+                </button>
+            </div>
             <p
                 className={`transition-all duration-500 ${
-                    currentPlayer ? 'text-blue-600' : 'text-black'
+                    currentPlayer ? 'text-blue-600 font-medium' : 'text-gray-600'
                 }`}
             >
-                현재 위치: {currentPosition} {currentPlayer && `(플레이어: ${currentPlayer})`}
+                현재 플레이어: {currentPlayer || '없음'}
             </p>
             <svg
-                width={svgWidth}
+                width="100%"
                 height={svgHeight}
-                className="border border-gray-300 mt-4"
+                viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+                className="border border-gray-300 mt-4 rounded-md bg-white"
             >
                 {/* 수직 사다리 선 */}
                 {Array.from({ length: lanes }).map((_, i) => (
@@ -50,41 +188,94 @@ export default function LadderBoard() {
                         y1={0}
                         x2={i * laneWidth + laneWidth / 2}
                         y2={svgHeight}
-                        stroke="black"
-                        strokeWidth="2"
+                        stroke="#4B5563"
+                        strokeWidth="4"
+                        strokeLinecap="round"
                     />
                 ))}
-                {/* 수평 연결선 (SSE path 기반) */}
-                {path.map((connect, step) =>
-                    connect ? (
-                        <line
-                            key={`hline-${step}`}
-                            x1={(currentPosition * laneWidth + laneWidth / 2)}
-                            y1={(step + 0.5) * stepHeight}
-                            x2={((currentPosition + 1) * laneWidth + laneWidth / 2)}
-                            y2={(step + 0.5) * stepHeight}
-                            stroke="black"
-                            strokeWidth="2"
-                        />
-                    ) : null
+                {/* 수평 연결선 */}
+                {bridges.map(({ lanePair, hasBridge }, step) => {
+                    if (hasBridge) {
+                        return (
+                            <line
+                                key={`hline-${step}`}
+                                x1={lanePair * laneWidth + laneWidth / 2}
+                                y1={(step + 0.5) * stepHeight}
+                                x2={(lanePair + 1) * laneWidth + laneWidth / 2}
+                                y2={(step + 0.5) * stepHeight}
+                                stroke="#4B5563"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                            />
+                        );
+                    }
+                    return null;
+                })}
+                {/* 플레이어 이동 경로 선 */}
+                {pathPositions.length > 1 && (
+                    <polyline
+                        points={animationPath.map((pos) => `${pos.x},${pos.y}`).join(' ')}
+                        stroke="#3B82F6"
+                        strokeWidth="3"
+                        fill="none"
+                        strokeDasharray="5,5"
+                    />
                 )}
                 {/* 플레이어 아이콘 */}
-                <circle
-                    cx={currentPosition * laneWidth + laneWidth / 2}
-                    cy={svgHeight - 20}
-                    r="15"
-                    fill="blue"
-                    className="transition-all duration-500"
-                />
-                <text
-                    x={currentPosition * laneWidth + laneWidth / 2}
-                    y={svgHeight - 30}
-                    textAnchor="middle"
-                    fontSize="12"
-                    fill="white"
-                >
-                    {currentPlayer || 'P'}
-                </text>
+                {isPlaying && animationPath.length > 0 ? (
+                    <motion.g
+                        animate={{
+                            x: animationPath.map((pos) => pos.x - animationPath[0].x),
+                            y: animationPath.map((pos) => pos.y - animationPath[0].y),
+                        }}
+                        transition={{
+                            duration: totalSteps * 0.5,
+                            times,
+                            ease: 'easeInOut',
+                            onComplete: () => setIsPlaying(false), // 애니메이션 종료 시 isPlaying false
+                        }}
+                    >
+                        <circle
+                            cx={animationPath[0].x}
+                            cy={animationPath[0].y}
+                            r="25"
+                            fill="#3B82F6"
+                            stroke="#FFFFFF"
+                            strokeWidth="2"
+                        />
+                        <text
+                            x={animationPath[0].x}
+                            y={animationPath[0].y + 5}
+                            textAnchor="middle"
+                            fontSize="12"
+                            fill="white"
+                            fontWeight="bold"
+                        >
+                            {currentPlayer || 'P'}
+                        </text>
+                    </motion.g>
+                ) : (
+                    <g>
+                        <circle
+                            cx={currentPosition * laneWidth + laneWidth / 2}
+                            cy={20}
+                            r="25"
+                            fill="#3B82F6"
+                            stroke="#FFFFFF"
+                            strokeWidth="2"
+                        />
+                        <text
+                            x={currentPosition * laneWidth + laneWidth / 2}
+                            y={25}
+                            textAnchor="middle"
+                            fontSize="12"
+                            fill="white"
+                            fontWeight="bold"
+                        >
+                            {currentPlayer || 'P'}
+                        </text>
+                    </g>
+                )}
             </svg>
         </div>
     );
