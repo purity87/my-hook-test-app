@@ -78,7 +78,6 @@ export default function LadderBoard() {
 
     // 시작 레인 선택 시 플레이어 이동 및 경로 초기화
     useEffect(() => {
-        console.log('>>currentPlayer ', currentPlayer)
         if (!isPlaying) {
             setCurrentPosition(selectedLane);
             setPathPositions([]); // 경로 초기화
