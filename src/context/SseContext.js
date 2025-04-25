@@ -1,6 +1,6 @@
 // SSE 데이터를 관리할 Context
 'use client';
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 
 const SseContext = createContext();
 
@@ -13,6 +13,7 @@ export const SseProvider = ({ children }) => {
     const connect = () => {
         if (eventSourceRef.current) {
             eventSourceRef.current.close();
+            eventSourceRef.current = null;
         }
 
         const eventSource = new EventSource('/api/sse');
@@ -52,10 +53,10 @@ export const SseProvider = ({ children }) => {
         }
     };
 
-    useEffect(() => {
-        connect();
-        return () => disconnect();
-    }, []);
+    // useEffect(() => {
+    //     connect();
+    //     return () => disconnect();x
+    // }, []);
 
     return (
         <SseContext.Provider value={{ messages, error, isConnected, connect, disconnect }}>

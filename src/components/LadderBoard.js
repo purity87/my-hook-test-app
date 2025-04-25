@@ -59,7 +59,7 @@ const generateRandomBridges = () => {
 };
 
 export default function LadderBoard() {
-    const { messages, isConnected, disconnect } = useSse();
+    const { messages, isConnected, connect, disconnect } = useSse();
     const [currentPosition, setCurrentPosition] = useState(0);
     const [selectedLane, setSelectedLane] = useState(0);
     const [currentPlayer, setCurrentPlayer] = useState(null);
@@ -124,7 +124,7 @@ export default function LadderBoard() {
         <div className="p-4 bg-gray-50 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">사다리타기</h2>
             <div className="flex items-center space-x-4 mb-4">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-4">
                     <label className="text-gray-600">시작 레인:</label>
                     <select
                         value={selectedLane}
@@ -141,7 +141,7 @@ export default function LadderBoard() {
                 </div>
                 <button
                     onClick={handleGenerateLadder}
-                    className="px-4 py-1 bg-green-600 text-white rounded-lg hover:bg-green-800 transition-colors duration-300 disabled:opacity-70"
+                    className="px-4 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-800 transition-colors duration-300 disabled:opacity-50"
                     disabled={isPlaying}
                 >
                     사다리 랜덤 생성
@@ -154,11 +154,13 @@ export default function LadderBoard() {
                     {isPlaying ? '진행 중...' : '사다리타기 시작'}
                 </button>
                 <button
-                    onClick={disconnect}
-                    className="px-4 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
-                    disabled={!isConnected}
+                    onClick={isConnected ? disconnect : connect}
+                    className={`ml-auto px-4 py-1 ${
+                        isConnected ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-500 hover:bg-blue-700'
+                    } text-white rounded-lg transition-colors duration-300 disabled:opacity-50`}
+                    disabled={isPlaying}
                 >
-                    SSE 연결 끊기
+                    {isConnected ? 'SSE 해제' : 'SSE 연결'}
                 </button>
             </div>
             <p

@@ -25,7 +25,7 @@ export async function GET(req) {
                 };
                 const data = `data: ${JSON.stringify(message)}\n\n`;
                 controller.enqueue(encoder.encode(data));
-            }, 5000);
+            }, 2000);
 
             req.signal.addEventListener('abort', () => {
                 clearInterval(interval);
