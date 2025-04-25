@@ -1,6 +1,7 @@
 // 전역 설정 (SseProvider를 적용한 루트 레이아웃.)
 import React from 'react';
 import { SseProvider } from '@/context/SseContext';
+import '@/app/globals.css'; // Tailwind CSS 임포트
 
 export default function RootLayout({ children }) {
     return (

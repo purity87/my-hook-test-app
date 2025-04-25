@@ -106,22 +106,10 @@ export default function LadderBoard() {
     // 사다리 설정
     const lanes = 4; // 4개의 수직선
     const steps = 5; // 5단계
-    const laneWidth = 100;
-    const stepHeight = 60;
+    const laneWidth = 150;
+    const stepHeight = 90;
     const svgWidth = lanes * laneWidth;
     const svgHeight = steps * stepHeight;
-
-    // 애니메이션 경로 좌표 계산
-    const getPlayerCoordinates = (stepIndex = pathPositions.length - 1) => {
-        if (pathPositions.length === 0 || stepIndex < 0) {
-            return { x: currentPosition * laneWidth + laneWidth / 2, y: 20 };
-        }
-        const pos = pathPositions[stepIndex];
-        return {
-            x: pos.lane * laneWidth + laneWidth / 2,
-            y: pos.step * stepHeight + 20,
-        };
-    };
 
     // 애니메이션 경로 (수직/수평 분리)
     const animationPath = pathPositions.length > 0
@@ -136,8 +124,8 @@ export default function LadderBoard() {
         <div className="p-4 bg-gray-50 rounded-lg shadow-md">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">진짜 사다리타기</h2>
             <div className="flex items-center space-x-4 mb-4">
-                <div>
-                    <label className="text-gray-600 mr-2">시작 레인:</label>
+                <div className="flex items-center space-x-2">
+                    <label className="text-gray-600">시작 레인:</label>
                     <select
                         value={selectedLane}
                         onChange={(e) => setSelectedLane(Number(e.target.value))}
@@ -153,14 +141,14 @@ export default function LadderBoard() {
                 </div>
                 <button
                     onClick={handleGenerateLadder}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 disabled:opacity-50"
+                    className="px-4 py-1 bg-green-600 text-white rounded-lg hover:bg-green-800 transition-colors duration-300 disabled:opacity-70"
                     disabled={isPlaying}
                 >
                     사다리 랜덤 생성
                 </button>
                 <button
                     onClick={handleStartLadder}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50"
+                    className="px-4 py-1 bg-purple-500 text-white rounded-lg hover:bg-purple-700 transition-colors duration-300 disabled:opacity-50"
                     disabled={!isGenerated || isPlaying}
                 >
                     {isPlaying ? '진행 중...' : '사다리타기 시작'}
@@ -168,7 +156,7 @@ export default function LadderBoard() {
             </div>
             <p
                 className={`transition-all duration-500 ${
-                    currentPlayer ? 'text-blue-600 font-medium' : 'text-gray-600'
+                    currentPlayer ? 'text-purple-500 font-medium' : 'text-gray-600'
                 }`}
             >
                 현재 플레이어: {currentPlayer || '없음'}
@@ -214,8 +202,8 @@ export default function LadderBoard() {
                 {pathPositions.length > 1 && (
                     <polyline
                         points={animationPath.map((pos) => `${pos.x},${pos.y}`).join(' ')}
-                        stroke="#3B82F6"
-                        strokeWidth="3"
+                        stroke="#fc4c8d"
+                        strokeWidth="4"
                         fill="none"
                         strokeDasharray="5,5"
                     />
@@ -238,7 +226,7 @@ export default function LadderBoard() {
                             cx={animationPath[0].x}
                             cy={animationPath[0].y}
                             r="25"
-                            fill="#3B82F6"
+                            fill="#fc4c8d"
                             stroke="#FFFFFF"
                             strokeWidth="2"
                         />
@@ -259,7 +247,7 @@ export default function LadderBoard() {
                             cx={currentPosition * laneWidth + laneWidth / 2}
                             cy={20}
                             r="25"
-                            fill="#3B82F6"
+                            fill="#fc4c8d"
                             stroke="#FFFFFF"
                             strokeWidth="2"
                         />
