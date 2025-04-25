@@ -50,12 +50,33 @@ const calculateAnimationPath = (pathPositions, laneWidth, stepHeight) => {
     return animationPath;
 };
 
-// 랜덤 사다리 생성 함수
+// 랜덤 사다리 생성 함수 (각 레인 쌍에 최소 한 개 수평선 보장)
 const generateRandomBridges = () => {
-    return Array.from({ length: 5 }, () => ({
+    const bridges = Array.from({ length: 5 }, () => ({
         lanePair: Math.floor(Math.random() * 3), // 0: 0-1, 1: 1-2, 2: 2-3
-        hasBridge: Math.random() > 0.5, // 연결선 여부
+        hasBridge: false, // 초기값
     }));
+
+    // 각 lanePair(0, 1, 2)에 최소 한 개 수평선 배치
+    const usedSteps = new Set();
+    [0, 1, 2].forEach((lanePair) => {
+        let step;
+        do {
+            step = Math.floor(Math.random() * 5);
+        } while (usedSteps.has(step)); // 중복 단계 방지
+        usedSteps.add(step);
+        bridges[step] = { lanePair, hasBridge: true };
+    });
+
+    // 나머지 단계는 랜덤으로 수평선 결정
+    bridges.forEach((bridge, index) => {
+        if (!usedSteps.has(index)) {
+            bridge.lanePair = Math.floor(Math.random() * 3);
+            bridge.hasBridge = Math.random() > 0.5;
+        }
+    });
+
+    return bridges;
 };
 
 export default function LadderBoard() {
