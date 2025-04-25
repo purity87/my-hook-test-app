@@ -59,7 +59,7 @@ const generateRandomBridges = () => {
 };
 
 export default function LadderBoard() {
-    const { messages } = useSse();
+    const { messages, isConnected, disconnect } = useSse();
     const [currentPosition, setCurrentPosition] = useState(0);
     const [selectedLane, setSelectedLane] = useState(0);
     const [currentPlayer, setCurrentPlayer] = useState(null);
@@ -122,7 +122,7 @@ export default function LadderBoard() {
 
     return (
         <div className="p-4 bg-gray-50 rounded-lg shadow-md">
-            <h2 className="text-xl font-semibold mb-4 text-gray-800">진짜 사다리타기</h2>
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">사다리타기</h2>
             <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center space-x-2">
                     <label className="text-gray-600">시작 레인:</label>
@@ -152,6 +152,13 @@ export default function LadderBoard() {
                     disabled={!isGenerated || isPlaying}
                 >
                     {isPlaying ? '진행 중...' : '사다리타기 시작'}
+                </button>
+                <button
+                    onClick={disconnect}
+                    className="px-4 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 disabled:opacity-50"
+                    disabled={!isConnected}
+                >
+                    SSE 연결 끊기
                 </button>
             </div>
             <p

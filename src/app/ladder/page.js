@@ -10,7 +10,7 @@ export default function LadderPage() {
     return (
         <div className="max-w-4xl mx-auto p-6 bg-gray-100 min-h-screen">
             <Header />
-            <h1 className="text-4xl font-extrabold mb-6 text-gray-800 text-center">진짜 사다리타기</h1>
+            <h1 className="text-4xl font-extrabold mb-6 text-gray-800 text-center">사다리타기</h1>
             {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
             <LadderBoard />
             <div className="mt-8 bg-white p-4 rounded-lg shadow-md">
